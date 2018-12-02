@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,7 +18,10 @@ namespace Backpack
             {
                 try
                 {
-                    return (decimal?) decimal.Parse(l);
+                    return (decimal?) decimal.Parse(l
+                            .Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator)
+                            .Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator),
+                        CultureInfo.InvariantCulture);
                 }
                 catch
                 {
@@ -25,23 +31,48 @@ namespace Backpack
 
             var sum = input.First();
             var data = input.Skip(1).ToList();
-            
-            var res = GetMaxSum(sum, data);
+            var dataDesc = input.Skip(1).OrderByDescending(x => x).ToList();
 
-            Console.WriteLine("Max Sum: {0}({2}). Data:{1}", res.Sum(), string.Join(" ; ",res), sum);
+            var sw = new Stopwatch();
+
+            for (int i = 1; i <= data.Count; ++i)
+            {
+                sw.Restart();
+                var res = GetMaxSum(sum, data.Take(i)).ToList();
+                sw.Stop();
+
+                Console.WriteLine("Elements: {0}; Time: {1}", i, sw.Elapsed);
+                Console.WriteLine("Max Sum: {0}/{2}. Data: {1}", res.Sum(), string.Join(" ; ", res), sum);
+
+                sw.Restart();
+                var res2 = GetMaxSum(sum, dataDesc.Take(i)).ToList();
+                sw.Stop();
+
+                Console.WriteLine("Max elements: {0}; Time: {1}", i, sw.Elapsed);
+                Console.WriteLine("Max Sum: {0}/{2}. Data: {1}", res2.Sum(), string.Join(" ; ", res2), sum);
+
+                if (res.Sum() >= sum || res2.Sum() >= sum) break;
+            }
+
+            Console.WriteLine("Completed!");
+
             Console.ReadLine();
         }
 
         public static IEnumerable<decimal> GetMaxSum(decimal max, IEnumerable<decimal> data)
         {
-            if(!data.Any()) return new decimal[0];
+            if (!data.Any()) return new decimal[0];
 
             var elem = data.First();
 
             if (elem > max) return GetMaxSum(max, data.Skip(1));
 
-            var noTake = GetMaxSum(max, data.Skip(1));
-            var take = GetMaxSum(max - elem, data.Skip(1));
+            var t1 = Task.Run(() => GetMaxSum(max, data.Skip(1)));
+            var t2 = Task.Run(() => GetMaxSum(max - elem, data.Skip(1)));
+
+            Task.WaitAll(t1, t2);
+            var noTake = t1.Result;
+            var take = t2.Result;
 
             if (noTake.Sum() >= take.Sum() + elem)
             {
@@ -49,7 +80,6 @@ namespace Backpack
             }
 
             return new[] {elem}.AsEnumerable().Union(take);
-
         }
     }
 }
