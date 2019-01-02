@@ -30,8 +30,8 @@ namespace Backpack
             }).Where(x => x.HasValue).Select(x => x.Value);
 
             var sum = input.First();
-            var data = input.Skip(1).ToList();
-            var dataDesc = input.Skip(1).OrderByDescending(x => x).ToList();
+            var data = input.Skip(1).Where(x=>x<=sum).ToList();
+            var dataDesc = data.OrderByDescending(x => x).ToList();
 
             var sw = new Stopwatch();
 
@@ -43,6 +43,7 @@ namespace Backpack
 
                 Console.WriteLine("Elements: {0}; Time: {1}", i, sw.Elapsed);
                 Console.WriteLine("Max Sum: {0}/{2}. Data: {1}", res.Sum(), string.Join(" ; ", res), sum);
+                Console.WriteLine();
 
                 sw.Restart();
                 var res2 = GetMaxSum(sum, dataDesc.Take(i)).ToList();
@@ -50,6 +51,7 @@ namespace Backpack
 
                 Console.WriteLine("Max elements: {0}; Time: {1}", i, sw.Elapsed);
                 Console.WriteLine("Max Sum: {0}/{2}. Data: {1}", res2.Sum(), string.Join(" ; ", res2), sum);
+                Console.WriteLine("------------------------------------");
 
                 if (res.Sum() >= sum || res2.Sum() >= sum) break;
             }
